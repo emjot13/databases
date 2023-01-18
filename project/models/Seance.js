@@ -8,7 +8,10 @@ seancesCollection.connect("mongodb://localhost:2000/seances", { useNewUrlParser:
 const seanceSchema = seancesCollection.Schema({
     date: Date,
     movie: mongoose.ObjectId,
-    room: Number
+    room: Number,
+    ticketPrice: Number,
+    roomSize: Number,
+    availableSeats: [Number]
 
 
 });

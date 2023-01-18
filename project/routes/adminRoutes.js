@@ -8,11 +8,13 @@ const adminRouter = express.Router();
 
 adminRouter.post("/seances", async (req, res) => {
     try {
-        const post = new Seance({...req.body});
-        await post.save();
-        let createdAt = `${req.protocol}://${req.get('host')}${req.originalUrl}/${post.id}`;
+        console.log(req.body.date)
+        let seance = new Seance({...req.body});
+        seance.availableSeats = Array.from({length: req.body.roomSize},(v, k) => k + 1)
+        await seance.save();
+        let createdAt = `${req.protocol}://${req.get('host')}${req.originalUrl}/${seance.id}`;
         res.setHeader('Location', createdAt);
-        res.status(201).send(post);
+        res.status(201).send(seance);
     }
     catch (err) {
         res.status(404).json({message: err.message});

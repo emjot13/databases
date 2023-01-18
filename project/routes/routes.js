@@ -1,5 +1,6 @@
 const express = require('express');
 const Movie = require('../models/Movie');
+const Seance = require('../models/Seance')
 const router = express.Router();
 
 
@@ -67,20 +68,32 @@ router.get("/movies/actors/:actor", async (req, res) => {
 });
 
 
-router.get("/movies/day/:day", async (req, res) => {
+router.get("/seances/day/:day", async (req, res) => {
     let day = req.params.day;
-    let start = new Date(new Date(day).setHours(0, 0, 0))
-    let end = new Date(new Date(day).setHours(23, 59, 59))
-    console.log(start, end)
-    const movies = await Movie.find({
-        itinerary: {
-            $elemMatch: {
-                $gte: start, $lte: end
-            }
-        }
+    let start = new Date(new Date(day).setHours(1, 0, 0))
+    let end = new Date(new Date(day).setHours(24, 59, 59))
+    const seances = await Seance.find({
+        date: { $gte: start, $lt: end }
     })
 
-    res.send(movies);
+    res.send(seances);
+});
+
+
+router.post("/seances/:id", async (req, res) => {
+    let id = req.params.id;
+    let seat =  parseInt(req.query.seat);
+    let seance = await Seance.findOne({_id: id})
+    let seats = seance.availableSeats
+    if (!seats.includes(seat)){
+        res.send("This seat is already taken")
+    }
+    else {
+    let newSeats = seats.filter(x => x !== seat);
+    seance.availableSeats = newSeats;
+    seance.save()
+    res.send(seance)
+    };
 });
 
 
