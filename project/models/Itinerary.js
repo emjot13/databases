@@ -1,8 +1,12 @@
 const { mongoose } = require("mongoose");
 
 const itinerarySchema = mongoose.Schema({
-    date: { type: Date, required: true },
-    movies: { type: [Schema.Types.ObjectId]}
+    // date: { type: Date, required: true },
+    hours: { 
+        type: Map,
+        of: SchemaTypes.ObjectId
+    }
+    // movies: { type: [Schema.Types.ObjectId]}
 
 });
 
