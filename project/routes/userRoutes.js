@@ -100,6 +100,37 @@ userRouter.post("/seances/:id", async (req, res) => {
 });
 
 
+userRouter.delete("/seances/:id", async (req, res) => {
+    let seanceId = req.params.id;
+    let seat = parseInt(req.query.seat);
+    let username = req.body.username
+    let user = await User.findOne({username: username})
+    console.log(user)
+    if (user !== null) {
+        if (!user.loggedIn){
+            res.send("You have to log in first")
+        }
+        else {
+            let seance = await Seance.findOne({_id: seanceId})
+            let seats = seance.availableSeats
+            if (!seance.validSeat(seat)){
+                res.send("This seat is already taken")
+            }
+            else {
+                let newSeats = seats.filter(x => x !== seat);
+                seance.availableSeats = newSeats;
+                seance.save()
+                res.send(seance)
+            }
+        }
+
+    }
+    else {
+        res.send("No such user")
+    }
+});
+
+
 
 
 // adminRouter.post("/movies", async (req, res) => {

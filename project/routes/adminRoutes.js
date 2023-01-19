@@ -1,9 +1,30 @@
 const express = require('express');
 const Movie = require('../models/Movie');
 const Seance = require('../models/Seance');
+const WelcomeScreen = require("../models/WelcomeScreen")
 
 const adminRouter = express.Router();
 
+
+
+adminRouter.post("/welcomeScreen", async (req, res) => {
+    try {
+        let welcomeScreen = new WelcomeScreen({...req.body});
+        await welcomeScreen.save();
+        let createdAt = `${req.protocol}://${req.get('host')}${req.originalUrl}/${welcomeScreen.id}`;
+        res.setHeader('Location', createdAt);
+        res.status(201).send(welcomeScreen);
+    }
+    catch (err) {
+        res.status(404).json({message: err.message});
+    }
+});
+
+
+
+adminRouter.get("/welcomeScreen", async (req, res) => {
+    res.status(200).send(welcomeScreen.find())
+});
 
 
 adminRouter.post("/seances", async (req, res) => {

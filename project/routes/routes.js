@@ -1,6 +1,7 @@
 const express = require('express');
 const Movie = require('../models/Movie');
 const Seance = require('../models/Seance')
+const WelcomeScreen = require("../models/WelcomeScreen");
 const router = express.Router();
 
 
@@ -24,6 +25,13 @@ router.get("/movies", async (req, res) => {
     const movie = await Movie.find(filter);
     res.send(movie);
   });
+
+
+
+router.get("/welcome/:id", async (req, res) => {
+    const welcome = await WelcomeScreen.findOne({ _id: req.params.id });
+    res.send(welcome);
+});
 
 router.get("/movies/:id", async (req, res) => {
     const movie = await Movie.findOne({ _id: req.params.id });
