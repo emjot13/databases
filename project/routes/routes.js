@@ -85,7 +85,7 @@ router.post("/seances/:id", async (req, res) => {
     let seat =  parseInt(req.query.seat);
     let seance = await Seance.findOne({_id: id})
     let seats = seance.availableSeats
-    if (!seats.includes(seat)){
+    if (!seance.validSeat(seat)){
         res.send("This seat is already taken")
     }
     else {

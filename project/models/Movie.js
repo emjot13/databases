@@ -1,16 +1,8 @@
 const { mongoose } = require("mongoose");
 require('mongoose-type-url');
-const Mongoose = require('mongoose').Mongoose;
-const moviesCollection = new Mongoose();
-moviesCollection.connect("mongodb://localhost:2000/movies", { useNewUrlParser: true })
 
 
-
-
-
-
-
-const movieSchema = moviesCollection.Schema({
+const movieSchema = mongoose.Schema({
     title: { type: String, required: true, maxLength: 100 },
     genre: {
         type: String,
@@ -24,8 +16,7 @@ const movieSchema = moviesCollection.Schema({
     director: String,
     actors: [String],
     trailer: mongoose.SchemaTypes.Url,
-    gallery: mongoose.SchemaTypes.Url,
+    gallery: mongoose.SchemaTypes.Url
+}, {timestamps: true});
 
-});
-
-module.exports = moviesCollection.model("Movie", movieSchema);
+module.exports = mongoose.model("Movie", movieSchema);

@@ -1,11 +1,7 @@
 const { mongoose } = require("mongoose");
-const Mongoose = require('mongoose').Mongoose;
-const seancesCollection = new Mongoose();
-seancesCollection.connect("mongodb://localhost:2000/seances", { useNewUrlParser: true })
 
 
-
-const seanceSchema = seancesCollection.Schema({
+const seanceSchema = mongoose.Schema({
     date: Date,
     movie: mongoose.ObjectId,
     room: Number,
@@ -13,7 +9,19 @@ const seanceSchema = seancesCollection.Schema({
     roomSize: Number,
     availableSeats: [Number]
 
+}, {timestamps: true});
 
-});
 
-module.exports = seancesCollection.model("Seance", seanceSchema);
+seanceSchema.methods.validSeat = function(seat) {
+    console.log(this.availableSeats.includes(seat));
+    if (this.availableSeats.includes(seat)) {
+        return true;
+    }
+    return false;
+};
+
+
+
+module.exports = mongoose.model("Seance", seanceSchema);
+
+
