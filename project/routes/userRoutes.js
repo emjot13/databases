@@ -2,6 +2,7 @@ const express = require('express');
 const Movie = require('../models/Movie');
 const Seance = require('../models/Seance');
 const User = require('../models/User');
+const Order = require("../models/Order")
 
 const userRouter = express.Router();
 
@@ -20,6 +21,83 @@ userRouter.post("/register", async (req, res) => {
     }
 });
 
+userRouter.post("/login", async (req, res) => {
+    try {
+        let username = req.body.username;
+        let password = req.body.password;
+        let user = await User.findOne({username: username})
+        console.log(user)
+        if (user !== null && user.comparePassword(password)){
+            if (user.loggedIn){
+                res.send("Already logged in")
+            }
+            else {
+            user.loggedIn = true
+            await user.save();
+            res.send("Logged in")
+            }
+        }
+        else {
+            res.status(401).send("Incorrect password or username")
+        }
+    }
+    catch (err) {
+        res.status(404).json({message: err.message});
+    }
+});
+userRouter.post("/logout", async (req, res) => {
+    try {
+        let username = req.body.username;
+        let user = await User.findOne({username: username})
+        if (user === null){
+            res.send("No such user")
+        }
+        else {
+            if (user.loggedIn){
+                res.send("Logged out")
+                user.loggedIn = false;
+                await user.save();
+            }
+            else {
+                res.send("Was not logged in")
+            }
+        }
+
+    }
+    catch (err) {
+        res.status(404).json({message: err.message});
+    }
+});
+
+userRouter.post("/seances/:id", async (req, res) => {
+    let seanceId = req.params.id;
+    let seat = parseInt(req.query.seat);
+    let username = req.body.username
+    let user = await User.findOne({username: username})
+    console.log(user)
+    if (user !== null) {
+        if (!user.loggedIn){
+            res.send("You have to log in first")
+        }
+        else {
+            let seance = await Seance.findOne({_id: seanceId})
+            let seats = seance.availableSeats
+            if (!seance.validSeat(seat)){
+                res.send("This seat is already taken")
+            }
+            else {
+                let newSeats = seats.filter(x => x !== seat);
+                seance.availableSeats = newSeats;
+                seance.save()
+                res.send(seance)
+            }
+        }
+
+    }
+    else {
+        res.send("No such user")
+    }
+});
 
 
 

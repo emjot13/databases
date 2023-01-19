@@ -68,33 +68,27 @@ router.get("/movies/actors/:actor", async (req, res) => {
 });
 
 
-router.get("/seances/day/:day", async (req, res) => {
-    let day = req.params.day;
-    let start = new Date(new Date(day).setHours(1, 0, 0))
-    let end = new Date(new Date(day).setHours(24, 59, 59))
-    const seances = await Seance.find({
-        date: { $gte: start, $lt: end }
-    })
+// router.get("/seances/", async (req, res) => {
+//     res.send(Seance.find());
+// });
+
+router.get("/seances", async (req, res) => {
+    let filter = {}
+    if (req.query.day) {
+        let day = req.query.day;
+        let start = new Date(new Date(day).setHours(1, 0, 0))
+        let end = new Date(new Date(day).setHours(24, 59, 59))
+
+        filter.date = { $gte: start, $lt: end };
+    }
+
+    const seances = await Seance.find(filter)
 
     res.send(seances);
 });
 
 
-router.post("/seances/:id", async (req, res) => {
-    let id = req.params.id;
-    let seat =  parseInt(req.query.seat);
-    let seance = await Seance.findOne({_id: id})
-    let seats = seance.availableSeats
-    if (!seance.validSeat(seat)){
-        res.send("This seat is already taken")
-    }
-    else {
-    let newSeats = seats.filter(x => x !== seat);
-    seance.availableSeats = newSeats;
-    seance.save()
-    res.send(seance)
-    };
-});
+
 
 
 

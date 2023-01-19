@@ -14,10 +14,8 @@ const seanceSchema = mongoose.Schema({
 
 seanceSchema.methods.validSeat = function(seat) {
     console.log(this.availableSeats.includes(seat));
-    if (this.availableSeats.includes(seat)) {
-        return true;
-    }
-    return false;
+    return this.availableSeats.includes(seat);
+
 };
 
 
