@@ -21,6 +21,10 @@ router.get("/movies", async (req, res) => {
         filter.genre = req.query.genre;
     }
 
+    if (req.query.id){
+        filter._id = req.query.id
+    }
+
 
     const movie = await Movie.find(filter);
     res.send(movie);
@@ -31,11 +35,6 @@ router.get("/movies", async (req, res) => {
 router.get("/welcome/:id", async (req, res) => {
     const welcome = await WelcomeScreen.findOne({ _id: req.params.id });
     res.send(welcome);
-});
-
-router.get("/movies/:id", async (req, res) => {
-    const movie = await Movie.findOne({ _id: req.params.id });
-    res.send(movie);
 });
 
 

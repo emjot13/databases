@@ -3,7 +3,7 @@ const uniqueValidator = require('mongoose-unique-validator');
 const bcrypt = require('bcrypt');
 
 
-SALT_WORK_FACTOR = 10;
+const SALT_WORK_FACTOR = 10;
 
 
 const userSchema = new mongoose.Schema({
@@ -27,11 +27,12 @@ userSchema.pre("save", function(next) {
 if(!this.isModified("password")) {
     return next();
 }
-this.password = bcrypt.hashSync(this.password, 10);
+this.password = bcrypt.hashSync(this.password, SALT_WORK_FACTOR);
 next();
 });
 
 userSchema.methods.comparePassword = function(plaintext) {
+    console.log(bcrypt.hashSync(plaintext, SALT_WORK_FACTOR))
     return bcrypt.compareSync(plaintext, this.password);
 };
 

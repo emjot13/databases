@@ -3,6 +3,7 @@ const Movie = require('../models/Movie');
 const Seance = require('../models/Seance');
 const User = require('../models/User');
 const Order = require("../models/Order")
+const { mongoose } = require("mongoose")
 
 const userRouter = express.Router();
 
@@ -27,6 +28,7 @@ userRouter.patch("/changePassword", async (req, res) => {
         let username = req.body.username;
         let oldPassword = req.body.oldPassword;
         let newPassword = req.body.newPassword;
+        console.log(oldPassword)
         let user = await User.findOne({username: username, loggedIn: true})
         if (!user){
             return res.send("You have to log in first")
@@ -35,6 +37,7 @@ userRouter.patch("/changePassword", async (req, res) => {
         if (user.comparePassword(oldPassword)){
             user.password = newPassword;
             user.save()
+            res.status(200).send("Password updated")
         }
         else {
             res.status(401).send("Incorrect password or username")
@@ -49,12 +52,11 @@ userRouter.patch("/changePassword", async (req, res) => {
 
 
 
-userRouter.post("/login", async (req, res) => {
+userRouter.patch("/login", async (req, res) => {
     try {
         let username = req.body.username;
         let password = req.body.password;
         let user = await User.findOne({username: username})
-        console.log(user)
         if (user !== null && user.comparePassword(password)){
             if (user.loggedIn){
                 res.send("Already logged in")
@@ -103,13 +105,19 @@ userRouter.get('/orders/:id', async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        const orders = await Order.find({ userId: req.params.id });
+        const orders = await Order.find({ userId: req.params.id }).populate({
+            path: 'seanceId',
+            model: 'Seance',
+            populate: {
+                path: 'movie',
+                model: 'Movie'
+            }
+        });
         return res.json(orders);
     } catch (err) {
         return res.status(500).json({ message: err.message });
     }
 });
-
 
 userRouter.post("/seances/:id", async (req, res) => {
     let seanceId = req.params.id;
@@ -168,8 +176,8 @@ userRouter.delete("/orders/:id", async (req, res) => {
 
 userRouter.patch("/orders/:id", async (req, res) => {
     let orderId = req.params.id;
-    let newSeat = req.body.seat;
-    let username = req.body.username;
+    let newSeat = parseInt(req.query.seat);
+    let username = req.query.username;
     try {
         let user = await User.findOne({username: username, loggedIn: true});
         if (!user) {
@@ -180,13 +188,16 @@ userRouter.patch("/orders/:id", async (req, res) => {
             return res.status(404).json({ message: "Order not found" });
         }
         let seance = await Seance.findOne({_id: order.seanceId});
+
         if (!seance.validSeat(newSeat)) {
             return res.send("This seat is already taken");
         }
+        seance.availableSeats = seance.availableSeats.filter(seat => seat !== newSeat)
+        seance.availableSeats.push(order.seat)
+        await seance.save()
         order.seat = newSeat;
         await order.save();
-        seance.availableSeats.push(seat);
-        await seance.save();
+
         res.json(order);
     } catch (err) {
         return res.status(500).json({ message: err.message });
