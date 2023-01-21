@@ -6,7 +6,8 @@ const orderSchema = new mongoose.Schema({
     seat: { type: Number, required: true },
     room: {type: Number, required: true},
     price: {type: Number, required: true},
-    paid: {type: Boolean, required: true, default: false }
+    paid: {type: Boolean, required: true, default: false },
+    paymentDate: Date
 
 },{
     timestamps:true

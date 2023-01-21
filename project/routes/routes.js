@@ -76,9 +76,6 @@ router.get("/movies/actors/:actor", async (req, res) => {
 });
 
 
-// router.get("/seances/", async (req, res) => {
-//     res.send(Seance.find());
-// });
 
 router.get("/seances", async (req, res) => {
     let filter = {}

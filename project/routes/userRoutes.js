@@ -21,6 +21,34 @@ userRouter.post("/register", async (req, res) => {
     }
 });
 
+
+userRouter.patch("/changePassword", async (req, res) => {
+    try {
+        let username = req.body.username;
+        let oldPassword = req.body.oldPassword;
+        let newPassword = req.body.newPassword;
+        let user = await User.findOne({username: username, loggedIn: true})
+        if (!user){
+            return res.send("You have to log in first")
+        }
+
+        if (user.comparePassword(oldPassword)){
+            user.password = newPassword;
+            user.save()
+        }
+        else {
+            res.status(401).send("Incorrect password or username")
+        }
+    }
+    catch (err) {
+        res.status(404).json({message: err.message});
+    }
+});
+
+
+
+
+
 userRouter.post("/login", async (req, res) => {
     try {
         let username = req.body.username;
@@ -69,119 +97,152 @@ userRouter.post("/logout", async (req, res) => {
     }
 });
 
+userRouter.get('/orders/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const orders = await Order.find({ userId: req.params.id });
+        return res.json(orders);
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+});
+
+
 userRouter.post("/seances/:id", async (req, res) => {
     let seanceId = req.params.id;
     let seat = parseInt(req.query.seat);
-    let username = req.body.username
-    let user = await User.findOne({username: username})
-    console.log(user)
-    if (user !== null) {
-        if (!user.loggedIn){
-            res.send("You have to log in first")
-        }
-        else {
-            let seance = await Seance.findOne({_id: seanceId})
-            let seats = seance.availableSeats
-            if (!seance.validSeat(seat)){
-                res.send("This seat is already taken")
-            }
-            else {
-                let newSeats = seats.filter(x => x !== seat);
-                seance.availableSeats = newSeats;
-                seance.save()
-                res.send(seance)
-            }
-        }
+    let username = req.body.username;
 
+    let user = await User.findOne({username: username, loggedIn: true});
+    if (!user) {
+        return res.send("You have to log in first");
     }
-    else {
-        res.send("No such user")
-    }
-});
 
-
-userRouter.delete("/seances/:id", async (req, res) => {
-    let seanceId = req.params.id;
-    let seat = parseInt(req.query.seat);
-    let username = req.body.username
-    let user = await User.findOne({username: username})
-    console.log(user)
-    if (user !== null) {
-        if (!user.loggedIn){
-            res.send("You have to log in first")
-        }
-        else {
-            let seance = await Seance.findOne({_id: seanceId})
-            let seats = seance.availableSeats
-            if (!seance.validSeat(seat)){
-                res.send("This seat is already taken")
-            }
-            else {
-                let newSeats = seats.filter(x => x !== seat);
-                seance.availableSeats = newSeats;
-                seance.save()
-                res.send(seance)
-            }
-        }
-
+    let seance = await Seance.findOne({_id: seanceId, availableSeats:  seat});
+    if (!seance) {
+        return res.send("This seat is already taken");
     }
-    else {
-        res.send("No such user")
-    }
+
+    let newOrder = new Order({
+        userId: user._id,
+        seanceId: seance._id,
+        seat: seat,
+        room: seance.room,
+        price: seance.ticketPrice
+    });
+    await newOrder.save();
+
+    await Seance.updateOne({_id: seanceId}, { $pull: { availableSeats: seat } });
+    await User.updateOne({_id: user._id}, { $push: { orders: newOrder._id } });
+
+    res.send(newOrder);
 });
 
 
 
 
-// adminRouter.post("/movies", async (req, res) => {
-//     try {
-//     const post = new Movie({...req.body});
-//     await post.save();
-//     let createdAt = `${req.protocol}://${req.get('host')}${req.originalUrl}/${post.id}`;
-//     res.setHeader('Location', createdAt);
-//     res.status(201).send(post);
-// }
-//     catch (err) {
-//         res.status(404).json({message: err.message});
-//     }
-// });
+// delete order
+userRouter.delete("/orders/:id", async (req, res) => {
+    let orderId = req.params.id;
+
+    let order = await Order.findOne({_id: orderId});
+    if (!order) {
+        return res.send("No such order");
+    }
+
+    let user = await User.findOne({_id: order.userId, loggedIn: true});
+    if (!user) {
+        return res.send("You have to log in first");
+    }
+
+    await Seance.updateOne({_id: order.seanceId}, { $push: { availableSeats: order.seat } });
+    await User.updateOne({_id: user._id}, { $pull: { orders: order._id } });
+    await Order.deleteOne({_id: orderId});
+
+    res.send(user.orders);
+});
 
 
+userRouter.patch("/orders/:id", async (req, res) => {
+    let orderId = req.params.id;
+    let newSeat = req.body.seat;
+    let username = req.body.username;
+    try {
+        let user = await User.findOne({username: username, loggedIn: true});
+        if (!user) {
+            return res.send("You have to log in first");
+        }
+        let order = await Order.findOne({_id: orderId, userId: user._id});
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+        let seance = await Seance.findOne({_id: order.seanceId});
+        if (!seance.validSeat(newSeat)) {
+            return res.send("This seat is already taken");
+        }
+        order.seat = newSeat;
+        await order.save();
+        seance.availableSeats.push(seat);
+        await seance.save();
+        res.json(order);
+    } catch (err) {
+        return res.status(500).json({ message: err.message });
+    }
+});
 
+userRouter.post("/pay", (req, res) => {
+    const { userId, money } = req.body;
 
-// adminRouter.patch("/movies/:id", async (req, res) => {
-//     try {
-//     const movie = await Movie.findOneAndUpdate({_id: req.params.id}, req.body, {new: true});
-//     res.status(201).send(movie);
-// }
-//     catch (err) {
-//         res.status(500).json({message: err.message});
-//     }
-// });
-
-
-
-// adminRouter.delete("/movies/:id", async (req, res) => {
-// 	try {
-// 		await Movie.deleteOne({ _id: req.params.id })
-// 		res.status(204).send()
-// 	}     catch (err) {
-//         res.status(404).json({message: err.message});
-//     }
-// })
-
-
-// adminRouter.delete("/clearDatabase", async (req, res) => {
-// 	try {
-// 		await Movie.deleteMany({})
-// 		res.status(204).send()
-// 	}     catch (err) {
-//         res.status(404).json({message: err.message});
-//     }
-// })
-
-
-
+    User.findById(userId)
+        .then(user => {
+            if (!user) {
+                return res.status(404).send("User not found");
+            }
+            return Order.find({ userId, paid: false })
+                .then(orders => {
+                    const totalPrice = orders.reduce((acc, order) => acc + order.price, 0);
+                    if (totalPrice !== money) {
+                        return res.status(400).send(`Invalid amount of money, you have to pay ${totalPrice}`);
+                    }
+                    return Promise.all(orders.map(order => {
+                        order.paid = true;
+                        return order.save();
+                    }))
+                        .then(() => res.status(200).send("Orders paid successfully"))
+                })
+        })
+        .catch(err => res.status(500).send(err.message));
+});
 
 
 module.exports = userRouter;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
